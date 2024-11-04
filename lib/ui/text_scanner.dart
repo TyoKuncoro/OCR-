@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_quill/flutter_quill.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 
 class TextScanner extends StatefulWidget {
@@ -11,7 +14,7 @@ class TextScanner extends StatefulWidget {
 }
 
 class _TextScannerState extends State<TextScanner> {
-  final TextEditingController _textEditingController = TextEditingController();
+  final QuillController _quillController = QuillController.basic();
   final TextRecognizer _textRecognizer =
       TextRecognizer(script: TextRecognitionScript.latin);
 
@@ -21,13 +24,13 @@ class _TextScannerState extends State<TextScanner> {
     var s = _textRecognizer
         .processImage(InputImage.fromFilePath(widget.imageFile.path));
     s.then(
-      (value) => {_textEditingController.text = value.text},
+      (value) => {_quillController.document.insert(0, value.text)},
     );
   }
 
   @override
   void dispose() {
-    _textEditingController.dispose();
+    _quillController.dispose();
     _textRecognizer.close();
     super.dispose();
   }
@@ -35,11 +38,9 @@ class _TextScannerState extends State<TextScanner> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(),
-      body: TextField(
-        maxLines: null,
-        controller: _textEditingController,
-      ),
-    );
+        appBar: AppBar(),
+        body: Padding(
+            padding: EdgeInsets.all(4),
+            child: Image(image: FileImage(File(widget.imageFile.path)))));
   }
 }

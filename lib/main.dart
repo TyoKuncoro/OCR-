@@ -110,6 +110,14 @@ class _MyHomePageState extends State<MyHomePage> {
             EmptyState(
               message: "No data",
             ),
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: Colors.black,
+                shape: BoxShape.circle
+              ),
+            )
           ],
         ),
       ),
