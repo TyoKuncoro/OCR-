@@ -17,6 +17,8 @@ class _CamerapreviewState extends State<CameraPreviewWidget>
     with WidgetsBindingObserver {
   late Future<void> _initializeCamera;
   late CameraController _cameraController;
+  double _scaleAnimCamBtn = 1.0;
+  FlashMode _cameraFlashMode = FlashMode.off;
 
   @override
   void initState() {
@@ -71,6 +73,36 @@ class _CamerapreviewState extends State<CameraPreviewWidget>
     }
   }
 
+  Widget flashButton() {
+    return ElevatedButton(
+        onPressed: () {
+          setState(() {
+            if (_cameraFlashMode == FlashMode.off) {
+              _cameraFlashMode = FlashMode.always;
+            } else {
+              _cameraFlashMode = FlashMode.off;
+            }
+          });
+          _cameraController.setFlashMode(_cameraFlashMode);
+        },
+        style: const ButtonStyle(
+            minimumSize: WidgetStatePropertyAll(Size(50, 50)),
+            shape: WidgetStatePropertyAll(CircleBorder()),
+            elevation: WidgetStatePropertyAll(5),
+            backgroundColor: WidgetStatePropertyAll(Colors.white)),
+        child: Builder(builder: (BuildContext context) {
+          IconData selectedIcon;
+
+          if (_cameraFlashMode == FlashMode.always) {
+            selectedIcon = Icons.flash_on;
+          } else {
+            selectedIcon = Icons.flash_off;
+          }
+
+          return Icon(selectedIcon);
+        }));
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<void>(
@@ -89,21 +121,43 @@ class _CamerapreviewState extends State<CameraPreviewWidget>
                 padding: const EdgeInsets.fromLTRB(0, 0, 0, 100),
                 child: Align(
                     alignment: Alignment.bottomCenter,
-                    child: ElevatedButton(
-                      onPressed: _takePicture,
-                      style: const ButtonStyle(
-                          minimumSize: WidgetStatePropertyAll(Size(70, 70)),
-                          shape: WidgetStatePropertyAll(CircleBorder()),
-                          elevation: WidgetStatePropertyAll(5),
-                          backgroundColor:
-                              WidgetStatePropertyAll(Colors.white)),
-                      child: const Icon(
-                        size: 50,
-                        Icons.camera,
-                        color: Colors.black,
-                      ),
-                    )),
+                    child: GestureDetector(
+                        onTapUp: (details) => setState(() {
+                              _scaleAnimCamBtn = 1.0;
+                              _takePicture();
+                            }),
+                        onTapDown: (details) => setState(() {
+                              _scaleAnimCamBtn = 0.8;
+                            }),
+                        onTapCancel: () => setState(() {
+                              _scaleAnimCamBtn = 1.0;
+                            }),
+                        child: ElevatedButton(
+                          onPressed: null,
+                          style: ButtonStyle(
+                              minimumSize:
+                                  const WidgetStatePropertyAll(Size(70, 70)),
+                              shape:
+                                  const WidgetStatePropertyAll(CircleBorder()),
+                              elevation: const WidgetStatePropertyAll(5),
+                              backgroundColor: WidgetStatePropertyAll(
+                                  Colors.black.withOpacity(0.5))),
+                          child: AnimatedScale(
+                            scale: _scaleAnimCamBtn,
+                            duration: const Duration(milliseconds: 100),
+                            child: Container(
+                              width: 50,
+                              height: 50,
+                              decoration: const BoxDecoration(
+                                  color: Colors.white, shape: BoxShape.circle),
+                            ),
+                          ),
+                        ))),
               ),
+              Align(
+                alignment: Alignment.bottomRight,
+                child: flashButton(),
+              )
             ],
           );
         } else if (snapshot.hasError) {
