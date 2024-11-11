@@ -2,11 +2,13 @@ import 'dart:io';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_quill/flutter_quill.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
+import 'package:ocr/utils/db.dart';
+import 'package:ocr/model/recognized_text.dart' as rnt;
 
 class TextScanner extends StatefulWidget {
   final XFile imageFile;
+
   const TextScanner({super.key, required this.imageFile});
 
   @override
@@ -14,7 +16,7 @@ class TextScanner extends StatefulWidget {
 }
 
 class _TextScannerState extends State<TextScanner> {
-  final QuillController _quillController = QuillController.basic();
+  final TextEditingController _textEditingController = TextEditingController();
   final TextRecognizer _textRecognizer =
       TextRecognizer(script: TextRecognitionScript.latin);
   Offset position = Offset(100, 100); // Initial position
@@ -26,16 +28,14 @@ class _TextScannerState extends State<TextScanner> {
         .processImage(InputImage.fromFilePath(widget.imageFile.path));
     s.then(
       (value) {
-        setState(() {
-          _quillController.document.insert(0, value.text);
-        });
+        _textEditingController.text = value.text;
       },
     );
   }
 
   @override
   void dispose() {
-    _quillController.dispose();
+    _textEditingController.dispose();
     _textRecognizer.close();
     super.dispose();
   }
@@ -43,13 +43,35 @@ class _TextScannerState extends State<TextScanner> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(),
-      body: Container(
+      appBar: AppBar(
+        actions: [
+          IconButton(
+              onPressed: () async {
+                var navigator = Navigator.of(context);
+                var bytes = await widget.imageFile.readAsBytes();
+                await DbManager.instance.recognizedTextDao
+                    .insertItem(rnt.RecognizedText(bytes));
+                navigator.popUntil(
+                  (route) {
+                    return route.isFirst;
+                  },
+                );
+              },
+              icon: Icon(Icons.done))
+        ],
+      ),
+      body: SizedBox(
         width: double.infinity,
         height: double.infinity,
         child: Stack(children: <Widget>[
-          QuillEditor.basic(
-            controller: _quillController,
+          Padding(
+            padding: EdgeInsets.all(8),
+            child: TextField(
+              controller: _textEditingController,
+              maxLines: null,
+              decoration: InputDecoration(border: null),
+              expands: true,
+            ),
           ),
           Positioned(
             left: position.dx,
@@ -65,7 +87,6 @@ class _TextScannerState extends State<TextScanner> {
                     x,
                     y,
                   );
-                  print("${position.dx} ${position.dy}");
                 });
               },
               child: Image(

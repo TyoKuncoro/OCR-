@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:ocr/model/recognized_text.dart';
 import 'package:ocr/ui/camera_preview.dart';
 import 'package:ocr/ui/reuseableComponent/Empty.dart';
+import 'package:ocr/ui/test.dart';
+import 'package:ocr/ui/text_scanner.dart';
+import 'package:ocr/utils/db.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await DbManager.init();
   runApp(const MyApp());
 }
 
@@ -66,22 +73,21 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  void _incrementCounter() {
-    Navigator.push(context,
-        MaterialPageRoute(builder: (context) => const CameraPreviewWidget()));
+  bool isSearching = false;
+  TextEditingController searchController = TextEditingController();
+  DateTime? lastPressed;
+  late Future<List<RecognizedText>> _items;
+
+  @override
+  void initState() {
+    super.initState();
   }
 
-  bool isSearching = false;
-
-  TextEditingController searchController = TextEditingController();
-
-  final List<Map<String, String>> images = [
-    {'name': 'Image1', 'path': 'assets/Image1.PNG'},
-    {'name': 'Image2', 'path': 'assets/Image2.PNG'},
-    {'name': 'Image3', 'path': 'assets/Image2.PNG'},
-    // Add more images here
-  ];
-  DateTime? lastPressed;
+  Future<void> _fetchItems() async {
+    setState(() {
+      _items = DbManager.instance.recognizedTextDao.findAll();
+    });
+  }
 
   Future<bool> onWillPop() async {
     final now = DateTime.now();
@@ -99,6 +105,81 @@ class _MyHomePageState extends State<MyHomePage> {
     }
     return Future.value(
         true); // Jika ditekan lagi dalam 2 detik, keluar dari app
+  }
+
+  Widget createGridList() {
+    return FutureBuilder<List<RecognizedText>>(
+      future: _items,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        var list = snapshot.data;
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Expanded(
+                child: GridView.builder(
+                  padding: EdgeInsets.all(8),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2, // Two columns
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                  ),
+                  itemCount: list!.length,
+                  itemBuilder: (context, index) {
+                    var imageBytes = list[index].image;
+                    var x = Image.memory(imageBytes);
+                    return Stack(
+                      children: [x,
+                        Positioned(
+                          bottom: 0,
+                          left: 0,
+                          right: 0,
+                          child: Container(
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 16),
+                            color: Colors.black54,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  "test",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: Icon(Icons.menu, color: Colors.white),
+                                  onPressed: () {
+                                    // Handle menu action
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+              // EmptyState(
+              //   message: "No data",
+              // ),
+              // Container(
+              //   width: 50,
+              //   height: 50,
+              //   decoration:
+              //       BoxDecoration(color: Colors.black, shape: BoxShape.circle),
+              // )
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -130,78 +211,7 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         ],
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Expanded(
-              child: GridView.builder(
-                padding: EdgeInsets.all(8),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2, // Two columns
-                  crossAxisSpacing: 8,
-                  mainAxisSpacing: 8,
-                ),
-                itemCount: images.length,
-                itemBuilder: (context, index) {
-                  final image = images[index];
-                  return Stack(
-                    children: [
-                      // Image container
-                      Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
-                          image: DecorationImage(
-                            image: AssetImage(image['path']!),
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        child: Container(
-                          padding:
-                              EdgeInsets.symmetric(horizontal: 8, vertical: 16),
-                          color: Colors.black54,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                image['name']!,
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              IconButton(
-                                icon: Icon(Icons.menu, color: Colors.white),
-                                onPressed: () {
-                                  // Handle menu action
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ),
-            // EmptyState(
-            //   message: "No data",
-            // ),
-            // Container(
-            //   width: 50,
-            //   height: 50,
-            //   decoration:
-            //       BoxDecoration(color: Colors.black, shape: BoxShape.circle),
-            // )
-          ],
-        ),
-      ),
+      body: createGridList(),
       floatingActionButton: Stack(
         children: <Widget>[
           Positioned(
@@ -209,7 +219,10 @@ class _MyHomePageState extends State<MyHomePage> {
               right: 16,
               child: FloatingActionButton(
                 onPressed: () {
-                  _incrementCounter();
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const CameraPreviewWidget()));
                 },
                 backgroundColor: Colors.transparent,
                 elevation: 0,
@@ -223,8 +236,18 @@ class _MyHomePageState extends State<MyHomePage> {
               bottom: 16,
               right: 16,
               child: FloatingActionButton(
-                onPressed: () {
-                  _incrementCounter();
+                onPressed: () async {
+                  var navigator = Navigator.of(context);
+                  var imagePicker = ImagePicker();
+
+                  var file =
+                      await imagePicker.pickImage(source: ImageSource.gallery);
+
+                  navigator.push(MaterialPageRoute(
+                    builder: (context) {
+                      return ImageTextRecognition(image: file!);
+                    },
+                  ));
                 },
                 backgroundColor: Colors.transparent,
                 elevation: 0,
