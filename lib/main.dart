@@ -75,9 +75,36 @@ class _MyHomePageState extends State<MyHomePage> {
 
   TextEditingController searchController = TextEditingController();
 
+  final List<Map<String, String>> images = [
+    {'name': 'Image1', 'path': 'assets/Image1.PNG'},
+    {'name': 'Image2', 'path': 'assets/Image2.PNG'},
+    {'name': 'Image3', 'path': 'assets/Image2.PNG'},
+    // Add more images here
+  ];
+  DateTime? lastPressed;
+
+  Future<bool> onWillPop() async {
+    final now = DateTime.now();
+    final maxDuration = Duration(seconds: 2);
+
+    if (lastPressed == null || now.difference(lastPressed!) > maxDuration) {
+      lastPressed = now;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Tekan kembali sekali lagi untuk keluar'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return Future.value(false);
+    }
+    return Future.value(
+        true); // Jika ditekan lagi dalam 2 detik, keluar dari app
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // onWillPop: onWillPop()
       appBar: AppBar(
         // backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: !isSearching
@@ -103,21 +130,75 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         ],
       ),
-      body: const Center(
+      body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            EmptyState(
-              message: "No data",
-            ),
-            Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                color: Colors.black,
-                shape: BoxShape.circle
+            Expanded(
+              child: GridView.builder(
+                padding: EdgeInsets.all(8),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2, // Two columns
+                  crossAxisSpacing: 8,
+                  mainAxisSpacing: 8,
+                ),
+                itemCount: images.length,
+                itemBuilder: (context, index) {
+                  final image = images[index];
+                  return Stack(
+                    children: [
+                      // Image container
+                      Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          image: DecorationImage(
+                            image: AssetImage(image['path']!),
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        child: Container(
+                          padding:
+                              EdgeInsets.symmetric(horizontal: 8, vertical: 16),
+                          color: Colors.black54,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                image['name']!,
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              IconButton(
+                                icon: Icon(Icons.menu, color: Colors.white),
+                                onPressed: () {
+                                  // Handle menu action
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
-            )
+            ),
+            // EmptyState(
+            //   message: "No data",
+            // ),
+            // Container(
+            //   width: 50,
+            //   height: 50,
+            //   decoration:
+            //       BoxDecoration(color: Colors.black, shape: BoxShape.circle),
+            // )
           ],
         ),
       ),
