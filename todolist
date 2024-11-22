@@ -1,7 +1,7 @@
 image to text (ocr)
-- load from camera (image to text)
-- load from gallery (image to text)
-- multiple result (list view)
+- load from camera (image to text) ✅
+- load from gallery (image to text) ✅
+- multiple result (list view) ✅
 - search feature
 - compare result and original
 - result title (optional) (dialog box)

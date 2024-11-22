@@ -96,7 +96,7 @@ class _$DbManager extends DbManager {
       },
       onCreate: (database, version) async {
         await database.execute(
-            'CREATE TABLE IF NOT EXISTS `RecognizedText` (`id` INTEGER, `image` BLOB NOT NULL, PRIMARY KEY (`id`))');
+            'CREATE TABLE IF NOT EXISTS `RecognizedTextItem` (`id` INTEGER, `image` BLOB NOT NULL, `text` TEXT NOT NULL, `timeCreated` INTEGER NOT NULL, `timeLastUpdated` INTEGER NOT NULL, PRIMARY KEY (`id`))');
 
         await callback?.onCreate?.call(database, version);
       },
@@ -115,12 +115,42 @@ class _$RecognizedTextDao extends RecognizedTextDao {
   _$RecognizedTextDao(
     this.database,
     this.changeListener,
-  )   : _queryAdapter = QueryAdapter(database),
-        _recognizedTextInsertionAdapter = InsertionAdapter(
+  )   : _queryAdapter = QueryAdapter(database, changeListener),
+        _recognizedTextItemInsertionAdapter = InsertionAdapter(
             database,
-            'RecognizedText',
-            (RecognizedText item) =>
-                <String, Object?>{'id': item.id, 'image': item.image});
+            'RecognizedTextItem',
+            (RecognizedTextItem item) => <String, Object?>{
+                  'id': item.id,
+                  'image': item.image,
+                  'text': item.text,
+                  'timeCreated': item.timeCreated,
+                  'timeLastUpdated': item.timeLastUpdated
+                },
+            changeListener),
+        _recognizedTextItemUpdateAdapter = UpdateAdapter(
+            database,
+            'RecognizedTextItem',
+            ['id'],
+            (RecognizedTextItem item) => <String, Object?>{
+                  'id': item.id,
+                  'image': item.image,
+                  'text': item.text,
+                  'timeCreated': item.timeCreated,
+                  'timeLastUpdated': item.timeLastUpdated
+                },
+            changeListener),
+        _recognizedTextItemDeletionAdapter = DeletionAdapter(
+            database,
+            'RecognizedTextItem',
+            ['id'],
+            (RecognizedTextItem item) => <String, Object?>{
+                  'id': item.id,
+                  'image': item.image,
+                  'text': item.text,
+                  'timeCreated': item.timeCreated,
+                  'timeLastUpdated': item.timeLastUpdated
+                },
+            changeListener);
 
   final sqflite.DatabaseExecutor database;
 
@@ -128,17 +158,61 @@ class _$RecognizedTextDao extends RecognizedTextDao {
 
   final QueryAdapter _queryAdapter;
 
-  final InsertionAdapter<RecognizedText> _recognizedTextInsertionAdapter;
+  final InsertionAdapter<RecognizedTextItem>
+      _recognizedTextItemInsertionAdapter;
+
+  final UpdateAdapter<RecognizedTextItem> _recognizedTextItemUpdateAdapter;
+
+  final DeletionAdapter<RecognizedTextItem> _recognizedTextItemDeletionAdapter;
 
   @override
-  Future<List<RecognizedText>> findAll() async {
-    return _queryAdapter.queryList('SELECT * FROM RecognizedText',
-        mapper: (Map<String, Object?> row) =>
-            RecognizedText(row['image'] as Uint8List));
+  Future<List<RecognizedTextItem>> getList() async {
+    return _queryAdapter.queryList('SELECT * FROM RecognizedTextItem',
+        mapper: (Map<String, Object?> row) => RecognizedTextItem(
+            id: row['id'] as int?,
+            image: row['image'] as Uint8List,
+            text: row['text'] as String));
   }
 
   @override
-  Future<void> insertItem(RecognizedText val) async {
-    await _recognizedTextInsertionAdapter.insert(val, OnConflictStrategy.abort);
+  Stream<List<RecognizedTextItem>> getStreamList() {
+    return _queryAdapter.queryListStream('SELECT * FROM RecognizedTextItem',
+        mapper: (Map<String, Object?> row) => RecognizedTextItem(
+            id: row['id'] as int?,
+            image: row['image'] as Uint8List,
+            text: row['text'] as String),
+        queryableName: 'RecognizedTextItem',
+        isView: false);
+  }
+
+  @override
+  Future<RecognizedTextItem?> getById(int itemId) async {
+    return _queryAdapter.query('SELECT * FROM RecognizedTextItem where id =?1',
+        mapper: (Map<String, Object?> row) => RecognizedTextItem(
+            id: row['id'] as int?,
+            image: row['image'] as Uint8List,
+            text: row['text'] as String),
+        arguments: [itemId]);
+  }
+
+  @override
+  Future<void> clear() async {
+    await _queryAdapter.queryNoReturn('DELETE FROM RecognizedTextItem');
+  }
+
+  @override
+  Future<void> add(RecognizedTextItem val) async {
+    await _recognizedTextItemInsertionAdapter.insert(
+        val, OnConflictStrategy.abort);
+  }
+
+  @override
+  Future<void> update(RecognizedTextItem val) async {
+    await _recognizedTextItemUpdateAdapter.update(val, OnConflictStrategy.fail);
+  }
+
+  @override
+  Future<void> remove(RecognizedTextItem val) async {
+    await _recognizedTextItemDeletionAdapter.delete(val);
   }
 }

@@ -8,7 +8,7 @@ import '../model/recognized_text_dao.dart';
 
 part 'db.g.dart';
 
-@Database(version: 1, entities: [RecognizedText])
+@Database(version: 1, entities: [RecognizedTextItem])
 abstract class DbManager extends FloorDatabase {
   RecognizedTextDao get recognizedTextDao;
 

@@ -1,15 +1,18 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:ocr/model/recognized_text.dart';
 import 'package:ocr/ui/camera_preview.dart';
-import 'package:ocr/ui/reuseableComponent/Empty.dart';
-import 'package:ocr/ui/test.dart';
 import 'package:ocr/ui/text_scanner.dart';
 import 'package:ocr/utils/db.dart';
+import 'package:ocr/widget/grid_list.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  //ensure main database initialized
   await DbManager.init();
+
   runApp(const MyApp());
 }
 
@@ -49,7 +52,7 @@ class MyApp extends StatelessWidget {
         // colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const MyHomePage(title: 'Homepage'),
+      home: const MyHomePage(title: 'Image to Text'),
     );
   }
 }
@@ -76,17 +79,10 @@ class _MyHomePageState extends State<MyHomePage> {
   bool isSearching = false;
   TextEditingController searchController = TextEditingController();
   DateTime? lastPressed;
-  late Future<List<RecognizedText>> _items;
 
   @override
   void initState() {
     super.initState();
-  }
-
-  Future<void> _fetchItems() async {
-    setState(() {
-      _items = DbManager.instance.recognizedTextDao.findAll();
-    });
   }
 
   Future<bool> onWillPop() async {
@@ -107,117 +103,42 @@ class _MyHomePageState extends State<MyHomePage> {
         true); // Jika ditekan lagi dalam 2 detik, keluar dari app
   }
 
-  Widget createGridList() {
-    return FutureBuilder<List<RecognizedText>>(
-      future: _items,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        var list = snapshot.data;
-        return Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              Expanded(
-                child: GridView.builder(
-                  padding: EdgeInsets.all(8),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2, // Two columns
-                    crossAxisSpacing: 8,
-                    mainAxisSpacing: 8,
-                  ),
-                  itemCount: list!.length,
-                  itemBuilder: (context, index) {
-                    var imageBytes = list[index].image;
-                    var x = Image.memory(imageBytes);
-                    return Stack(
-                      children: [x,
-                        Positioned(
-                          bottom: 0,
-                          left: 0,
-                          right: 0,
-                          child: Container(
-                            padding: EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 16),
-                            color: Colors.black54,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  "test",
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                IconButton(
-                                  icon: Icon(Icons.menu, color: Colors.white),
-                                  onPressed: () {
-                                    // Handle menu action
-                                  },
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-              ),
-              // EmptyState(
-              //   message: "No data",
-              // ),
-              // Container(
-              //   width: 50,
-              //   height: 50,
-              //   decoration:
-              //       BoxDecoration(color: Colors.black, shape: BoxShape.circle),
-              // )
-            ],
-          ),
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // onWillPop: onWillPop()
-      appBar: AppBar(
-        // backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: !isSearching
-            ? Text("Image to Text")
-            : TextField(
-                controller: searchController,
-                autofocus: true,
-                decoration: InputDecoration(
-                  hintText: "Search...",
-                  border: InputBorder.none,
+        appBar: AppBar(
+          title: !isSearching
+              ? Text(widget.title)
+              : TextField(
+                  controller: searchController,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    hintText: "Search...",
+                    border: InputBorder.none,
+                  ),
+                  style: TextStyle(color: Colors.white),
                 ),
-                style: TextStyle(color: Colors.white),
-              ),
-        actions: [
-          IconButton(
-            icon: Icon(isSearching ? Icons.close : Icons.search),
-            onPressed: () {
-              setState(() {
-                isSearching = !isSearching;
-                if (!isSearching) searchController.clear();
-              });
-            },
-          ),
-        ],
-      ),
-      body: createGridList(),
-      floatingActionButton: Stack(
-        children: <Widget>[
-          Positioned(
-              bottom: 90,
-              right: 16,
+          actions: [
+            IconButton(
+              icon: Icon(isSearching ? Icons.close : Icons.search),
+              onPressed: () {
+                setState(() {
+                  isSearching = !isSearching;
+                  if (!isSearching) searchController.clear();
+                });
+              },
+            ),
+          ],
+        ),
+        body: RecognizedTextList(),
+        floatingActionButton: Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          verticalDirection: VerticalDirection.down,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(8.0),
               child: FloatingActionButton(
+                heroTag: "cameraFab",
                 onPressed: () {
                   Navigator.push(
                       context,
@@ -229,23 +150,26 @@ class _MyHomePageState extends State<MyHomePage> {
                 child: Image.asset(
                   'assets/icons/Camera.PNG',
                   width: 48,
-                  // fit: BoxFit.cover,
                 ),
-              )),
-          Positioned(
-              bottom: 16,
-              right: 16,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
               child: FloatingActionButton(
+                heroTag: "galleryFab",
                 onPressed: () async {
                   var navigator = Navigator.of(context);
                   var imagePicker = ImagePicker();
 
                   var file =
                       await imagePicker.pickImage(source: ImageSource.gallery);
+                  if (file == null){
+                    return;
+                  }
 
                   navigator.push(MaterialPageRoute(
                     builder: (context) {
-                      return ImageTextRecognition(image: file!);
+                      return TextScanner(imageFile: file);
                     },
                   ));
                 },
@@ -254,11 +178,10 @@ class _MyHomePageState extends State<MyHomePage> {
                 child: Image.asset(
                   'assets/icons/Gallery.PNG',
                   width: 48,
-                  // fit: BoxFit.cover,
                 ),
-              ))
-        ],
-      ),
-    );
+              ),
+            ),
+          ],
+        ));
   }
 }
