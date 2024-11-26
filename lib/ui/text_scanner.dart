@@ -27,7 +27,7 @@ class TextScanner extends StatefulWidget {
 class _TextScannerState extends State<TextScanner> with WidgetsBindingObserver {
   final TextEditingController _textEditingController = TextEditingController();
   late Future<_ProcessResult> _processImage;
-  Offset position = Offset(100, 100); // Initial position
+  Offset imagePos = Offset(0, 0); // Initial position
 
   Future<_ProcessResult> doProcessImage() async {
     if (widget.imageFile != null) {
@@ -91,6 +91,10 @@ class _TextScannerState extends State<TextScanner> with WidgetsBindingObserver {
 
           _textEditingController.text = data.text;
 
+          var screenWidth = MediaQuery.of(context).size.width;
+          screenWidth -= 100;
+          imagePos = Offset(screenWidth, 0);
+
           return Scaffold(
             appBar: AppBar(
               actions: [
@@ -139,27 +143,13 @@ class _TextScannerState extends State<TextScanner> with WidgetsBindingObserver {
                   ),
                 ),
                 Positioned(
-                  left: position.dx,
-                  top: position.dy,
-                  child: GestureDetector(
-                    onPanUpdate: (details) {
-                      setState(() {
-                        var x = position.dx + details.delta.dx;
-                        if (x <= 0) x = 0;
-                        var y = position.dy + details.delta.dy;
-                        if (y <= 0) y = 0;
-                        position = Offset(
-                          x,
-                          y,
-                        );
-                      });
-                    },
-                    child: Image(
-                      width: 100,
-                      height: 100,
-                      fit: BoxFit.cover,
-                      image: MemoryImage(data.image),
-                    ),
+                  left: imagePos.dx,
+                  top: imagePos.dy,
+                  child: Image(
+                    width: 100,
+                    height: 100,
+                    fit: BoxFit.cover,
+                    image: MemoryImage(data.image),
                   ),
                 )
               ]),
