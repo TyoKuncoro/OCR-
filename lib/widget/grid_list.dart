@@ -24,7 +24,7 @@ class RecognizedTextListState extends State<RecognizedTextList> {
   final List<int?> _id = [];
   final List<String> _text = [];
   final List<Uint8List> _images = [];
-  final List<RecognizedTextItem> _searchToShow = [];
+  List<RecognizedTextItem> _searchToShow = [];
 
   final double _gridPad = 16;
 
@@ -34,7 +34,8 @@ class RecognizedTextListState extends State<RecognizedTextList> {
 
   void search(String keySearch) async {
     var list2 = await DbManager.instance.recognizedTextDao.getList();
-    print("tipe data: ${list2.runtimeType}");
+    _searchToShow.clear();
+    _text.clear();
     for (var element in list2) {
       _id.add(element.id);
       _text.add(element.text);
@@ -44,34 +45,17 @@ class RecognizedTextListState extends State<RecognizedTextList> {
       if (_text[i].toLowerCase().contains(keySearch)) {
         RecognizedTextItem _searchedList =
             RecognizedTextItem(id: _id[i], text: _text[i], image: _images[i]);
+
         _searchToShow.add(_searchedList);
       }
     }
     setState(() {
-      if (keySearch.isEmpty) {
+      if (keySearch == "") {
         searchMode = false;
       } else {
         searchMode = true;
       }
     });
-
-    print("list: ${list.runtimeType}");
-
-    // for (var element in list2) {
-    // setState(() {
-    //   if (keySearch.isEmpty) {
-    //     _filteredItems.add(element.id);
-    //   }
-    //   _items.add(element.text);
-    //   _filteredItems = _items
-    //       .where(
-    //           (item) => item.toLowerCase().contains(keySearch.toLowerCase()))
-    //       .toList();
-    // });
-    // print("ID: ${_id}");
-    // print("text: ${_text}");
-    // print("images: ${_images}");
-    // }
   }
 
   @override

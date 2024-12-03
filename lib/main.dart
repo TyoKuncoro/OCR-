@@ -118,7 +118,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     hintText: "Search...",
                     border: InputBorder.none,
                   ),
-                  onSubmitted: (value) => gridKey.currentState!.search(value),
+                  onChanged: (value) => gridKey.currentState!.search(value),
                   style: TextStyle(color: Colors.black),
                 ),
           actions: [
@@ -127,8 +127,11 @@ class _MyHomePageState extends State<MyHomePage> {
               onPressed: () {
                 setState(() {
                   isSearching = !isSearching;
-                  if (!isSearching) searchController.clear();
                 });
+                if (!isSearching) {
+                  searchController.clear();
+                  gridKey.currentState!.search("");
+                }
               },
             ),
           ],
