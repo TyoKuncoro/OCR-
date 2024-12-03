@@ -28,6 +28,7 @@ class _TextScannerState extends State<TextScanner> with WidgetsBindingObserver {
   final TextEditingController _textEditingController = TextEditingController();
   late Future<_ProcessResult> _processImage;
   Offset imagePos = Offset(0, 0); // Initial position
+  final TextEditingController _textDialogController = TextEditingController();
 
   Future<_ProcessResult> doProcessImage() async {
     if (widget.imageFile != null) {
@@ -50,7 +51,47 @@ class _TextScannerState extends State<TextScanner> with WidgetsBindingObserver {
     throw Exception("Must pass imageFile or item");
   }
 
-  @override
+  void showInputTitle(BuildContext context, data) {
+    String inputName = "";
+    print("hore");
+    TextEditingController _textController =
+        TextEditingController(text: "Document");
+    var navigator = Navigator.of(context);
+
+    showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text('Title'),
+            content: TextField(
+              controller: _textController,
+              decoration: InputDecoration(
+                border: OutlineInputBorder(),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () async {
+                  var i = rnt.RecognizedTextItem(
+                      image: data.image,
+                      // title: _textController.text,
+                      text: _textEditingController.text);
+                  await DbManager.instance.recognizedTextDao.add(i);
+
+                  Navigator.of(context).pop();
+                  navigator.popUntil(
+                    (route) {
+                      return route.isFirst;
+                    },
+                  );
+                },
+                child: Text('OK'),
+              ),
+            ],
+          );
+        });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -111,19 +152,21 @@ class _TextScannerState extends State<TextScanner> with WidgetsBindingObserver {
                           await DbManager.instance.recognizedTextDao
                               .update(item);
                         } else {
-                          var i = rnt.RecognizedTextItem(
-                              image: data.image,
-                              text: _textEditingController.text);
-                          await DbManager.instance.recognizedTextDao.add(i);
+                          showInputTitle(context, data);
                         }
                       } catch (error) {
                         Fluttertoast.showToast(msg: "Error: $error");
-                      } finally {
                         navigator.popUntil(
                           (route) {
                             return route.isFirst;
                           },
                         );
+                        // } finally {
+                        //   navigator.popUntil(
+                        //     (route) {
+                        //       return route.isFirst;
+                        //     },
+                        //   );
                       }
                     },
                     icon: Icon(Icons.done))

@@ -40,6 +40,7 @@ dependencies:
   async: ^2.11.0
   image_picker: ^0.8.7+3
   floor: ^1.5.0
+  provider: ^6.1.2
 
 dev_dependencies:
   floor_generator: ^1.5.0

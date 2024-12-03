@@ -6,6 +6,7 @@ import 'package:floor/floor.dart';
 class RecognizedTextItem {
   @primaryKey
   int? id; //column id
+  // String? title;
   final Uint8List image; //store as bytes
   String text; // scanned text in selected image
   late int timeCreated; // store time in epoch/unix timestamp
@@ -13,7 +14,8 @@ class RecognizedTextItem {
 
   RecognizedTextItem({this.id, required this.image, required this.text}) {
     if (text.trim().isEmpty) {
-      throw Exception("either image has no text or scanner unable to scan the image");
+      throw Exception(
+          "either image has no text or scanner unable to scan the image");
     }
 
     timeCreated = DateTime.now().millisecondsSinceEpoch;

@@ -1,10 +1,14 @@
 import 'package:floor/floor.dart';
+import 'package:flutter/material.dart';
 
 import 'recognized_text.dart';
 
 //interface for accessing table inside database
 @dao //dao = database object
 abstract class RecognizedTextDao {
+  // @Query('SELECT * FROM RecognizedTextItem where text LIKE :searchText')
+  // Future<List<RecognizedTextItem>> searchByText(String searchText);
+
   @Query('SELECT * FROM RecognizedTextItem')
   Future<List<RecognizedTextItem>> getList();
 

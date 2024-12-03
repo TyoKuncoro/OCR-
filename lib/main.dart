@@ -6,6 +6,7 @@ import 'package:ocr/ui/camera_preview.dart';
 import 'package:ocr/ui/text_scanner.dart';
 import 'package:ocr/utils/db.dart';
 import 'package:ocr/widget/grid_list.dart';
+import 'package:provider/provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,6 +21,7 @@ class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   // This widget is the root of your application.
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -59,7 +61,6 @@ class MyApp extends StatelessWidget {
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
-
   // This widget is the home page of your application. It is stateful, meaning
   // that it has a State object (defined below) that contains fields that affect
   // how it looks.
@@ -79,6 +80,7 @@ class _MyHomePageState extends State<MyHomePage> {
   bool isSearching = false;
   TextEditingController searchController = TextEditingController();
   DateTime? lastPressed;
+  GlobalKey<RecognizedTextListState> gridKey = GlobalKey();
 
   @override
   void initState() {
@@ -116,7 +118,8 @@ class _MyHomePageState extends State<MyHomePage> {
                     hintText: "Search...",
                     border: InputBorder.none,
                   ),
-                  style: TextStyle(color: Colors.white),
+                  onSubmitted: (value) => gridKey.currentState!.search(value),
+                  style: TextStyle(color: Colors.black),
                 ),
           actions: [
             IconButton(
@@ -130,7 +133,9 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
           ],
         ),
-        body: RecognizedTextList(),
+        body: RecognizedTextList(
+          key: gridKey,
+        ),
         floatingActionButton: Column(
           mainAxisAlignment: MainAxisAlignment.end,
           verticalDirection: VerticalDirection.down,
@@ -139,7 +144,7 @@ class _MyHomePageState extends State<MyHomePage> {
               padding: const EdgeInsets.all(8.0),
               child: FloatingActionButton(
                 heroTag: "cameraFab",
-                onPressed: () {
+                onPressed: () async {
                   Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -163,7 +168,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
                   var file =
                       await imagePicker.pickImage(source: ImageSource.gallery);
-                  if (file == null){
+                  if (file == null) {
                     return;
                   }
 

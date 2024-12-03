@@ -20,6 +20,7 @@ class _CameraPreviewState extends State<CameraPreviewWidget>
   double _scaleAnimCamBtn = 1.0;
   FlashMode _cameraFlashMode = FlashMode.off;
   bool _isTakingPicture = false;
+  String inputName = "";
 
   @override
   void initState() {
